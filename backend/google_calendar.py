@@ -6,7 +6,6 @@ from dateutil import parser as dateutil_parser
 from dateutil import tz
 import os
 import json
-from google.oauth2 import service_account
 
 # Path to your service account credentials
 SERVICE_ACCOUNT_FILE = "credentials/calendar-bot-credentials.json"
@@ -19,9 +18,9 @@ def get_calendar_service():
     Initializes and returns the Google Calendar API service client.
     Loads credentials from a file locally or from env variable on Render.
     """
-    if os.path.exists("credentials/calendar-bot-credentials.json"):
+    if os.path.exists(SERVICE_ACCOUNT_FILE):
         credentials = service_account.Credentials.from_service_account_file(
-            "credentials/calendar-bot-credentials.json", scopes=SCOPES
+            SERVICE_ACCOUNT_FILE, scopes=SCOPES
         )
     else:
         google_creds = os.environ.get("GOOGLE_CREDENTIALS_JSON")
@@ -53,13 +52,13 @@ def is_time_slot_available(calendar_id: str, start_time: datetime, end_time: dat
     Returns True if no existing event overlaps with the given time slot.
     Handles timezone-aware datetime comparisons.
     """
-    # Ensure start and end are timezone-aware (Asia/Kolkata assumed)
+    # Ensure timezone-aware
     if start_time.tzinfo is None:
         start_time = start_time.replace(tzinfo=tz.gettz("Asia/Kolkata"))
     if end_time.tzinfo is None:
         end_time = end_time.replace(tzinfo=tz.gettz("Asia/Kolkata"))
 
-    # Convert to UTC for querying
+    # Convert to UTC
     time_min = start_time.astimezone(tz.UTC).isoformat()
     time_max = end_time.astimezone(tz.UTC).isoformat()
 
@@ -75,7 +74,6 @@ def is_time_slot_available(calendar_id: str, start_time: datetime, end_time: dat
         event_start = dateutil_parser.isoparse(event_start_str)
         event_end = dateutil_parser.isoparse(event_end_str)
 
-        # Ensure event datetimes are also timezone-aware
         if start_time < event_end and end_time > event_start:
             print(f"[DEBUG] ❌ Overlap with existing event: {event_start} - {event_end}")
             return False
@@ -102,3 +100,31 @@ def create_event(calendar_id: str, summary: str, description: str, start_time: d
     }
 
     return service.events().insert(calendarId=calendar_id, body=event).execute()
+
+def confirm_booking_with_details(calendar_id: str, slot: dict, user_info: dict) -> str:
+    """
+    Confirms the booking and includes user name, work, and location/link in the event.
+    """
+    if not is_time_slot_available(calendar_id, slot["start_time"], slot["end_time"]):
+        return "❌ Sorry, that time slot is no longer available."
+
+    name = user_info.get("name", "Unknown")
+    work = user_info.get("work", "No purpose given")
+    place = user_info.get("place", "No location provided")
+
+    summary = f"Meeting with {name}"
+    description = f"Purpose: {work}\nLocation/Link: {place}\nDetails: {slot['description']}"
+
+    try:
+        create_event(
+            calendar_id,
+            summary,
+            description,
+            slot["start_time"],
+            slot["end_time"]
+        )
+        st = slot["start_time"].strftime("%I:%M %p")
+        et = slot["end_time"].strftime("%I:%M %p")
+        return f"✅ Meeting booked from {st} to {et} with {name}!"
+    except Exception as e:
+        return f"⚠️ Booking failed: {str(e)}"

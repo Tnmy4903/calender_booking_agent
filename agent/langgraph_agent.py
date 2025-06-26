@@ -1,9 +1,14 @@
 from datetime import datetime, timedelta
-from backend.google_calendar import is_time_slot_available, create_event
+from backend.google_calendar import (
+    is_time_slot_available,
+    create_event,
+    confirm_booking_with_details
+)
 import re
 from dateutil import parser as dateutil_parser
 
 CALENDAR_ID = "tnmy4903@gmail.com"
+
 
 def find_available_slots(base_date: datetime, count: int = 3) -> list:
     """
@@ -19,6 +24,7 @@ def find_available_slots(base_date: datetime, count: int = 3) -> list:
             break
     return available
 
+
 def parse_user_message(message: str) -> dict:
     """
     Parses user message for time, or returns None if no time given.
@@ -26,7 +32,9 @@ def parse_user_message(message: str) -> dict:
     print(f"[DEBUG] User Message: {message}")
 
     # Time range pattern
-    time_range = re.search(r"(\d{1,2})(:\d{2})?\s?(am|pm)?\s?[-–]\s?(\d{1,2})(:\d{2})?\s?(am|pm)?", message.lower())
+    time_range = re.search(
+        r"(\d{1,2})(:\d{2})?\s?(am|pm)?\s?[-–]\s?(\d{1,2})(:\d{2})?\s?(am|pm)?", message.lower()
+    )
 
     if time_range:
         g = time_range.groups()
@@ -68,6 +76,7 @@ def parse_user_message(message: str) -> dict:
         print(f"[DEBUG] Parse error: {e}")
         return None
 
+
 def handle_user_message(user_input: str) -> tuple[str, dict | None]:
     """
     Handles user request and returns (response_message, slot_to_confirm_if_any).
@@ -77,13 +86,11 @@ def handle_user_message(user_input: str) -> tuple[str, dict | None]:
     if parsed:
         available = is_time_slot_available(CALENDAR_ID, parsed["start_time"], parsed["end_time"])
         if available:
-            # Ask for confirmation
             st = parsed["start_time"].strftime("%I:%M %p")
             et = parsed["end_time"].strftime("%I:%M %p")
             msg = f"🕒 Should I book {st} to {et}?"
             return msg, parsed
         else:
-            # Suggest alternative slots
             base_date = parsed["start_time"].replace(hour=9, minute=0)
             alternatives = find_available_slots(base_date)
             if not alternatives:
@@ -95,7 +102,6 @@ def handle_user_message(user_input: str) -> tuple[str, dict | None]:
                 alt_msg += f"- {st} to {et}\n"
             return alt_msg.strip(), None
     else:
-        # No time mentioned → suggest next 3 slots
         base_date = datetime.now() + timedelta(days=1)
         options = find_available_slots(base_date)
         if not options:
@@ -110,24 +116,9 @@ def handle_user_message(user_input: str) -> tuple[str, dict | None]:
             "end_time": options[0]["end_time"]
         }
 
-def confirm_booking(slot: dict) -> str:
-    """
-    Re-checks availability, then books the slot if free.
-    """
-    if not is_time_slot_available(CALENDAR_ID, slot["start_time"], slot["end_time"]):
-        return "❌ Sorry, that time slot is no longer available. Please try another one."
 
-    try:
-        create_event(
-            CALENDAR_ID,
-            slot["summary"],
-            slot["description"],
-            slot["start_time"],
-            slot["end_time"]
-        )
-        st = slot["start_time"].strftime("%I:%M %p")
-        et = slot["end_time"].strftime("%I:%M %p")
-        return f"✅ Your meeting has been booked from {st} to {et}!"
-    except Exception as e:
-        return f"⚠️ Booking failed: {str(e)}"
-
+def confirm_booking(slot: dict, user_info: dict) -> str:
+    """
+    Confirms a booking with user metadata (name, work, place).
+    """
+    return confirm_booking_with_details(CALENDAR_ID, slot, user_info)
