@@ -17,8 +17,8 @@ if "last_slot" not in st.session_state:
     st.session_state.last_slot = None
 
 # Constants
-BACKEND_URL = "http://localhost:8000"
-# BACKEND_URL = "https://calender-booking-agent-backend.onrender.com"
+#BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = "https://calender-booking-agent-backend.onrender.com"
 
 # Input
 user_input = st.chat_input("Type your message here...")
