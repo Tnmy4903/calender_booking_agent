@@ -4,6 +4,9 @@ from datetime import datetime, timedelta
 from typing import List
 from dateutil import parser as dateutil_parser
 from dateutil import tz
+import os
+import json
+from google.oauth2 import service_account
 
 # Path to your service account credentials
 SERVICE_ACCOUNT_FILE = "credentials/calendar-bot-credentials.json"
@@ -14,10 +17,20 @@ SCOPES = ["https://www.googleapis.com/auth/calendar"]
 def get_calendar_service():
     """
     Initializes and returns the Google Calendar API service client.
+    Loads credentials from a file locally or from env variable on Render.
     """
-    credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES
-    )
+    if os.path.exists("credentials/calendar-bot-credentials.json"):
+        credentials = service_account.Credentials.from_service_account_file(
+            "credentials/calendar-bot-credentials.json", scopes=SCOPES
+        )
+    else:
+        google_creds = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+        if not google_creds:
+            raise RuntimeError("Missing Google credentials in both file and environment.")
+        credentials = service_account.Credentials.from_service_account_info(
+            json.loads(google_creds), scopes=SCOPES
+        )
+
     return build("calendar", "v3", credentials=credentials)
 
 def list_events(calendar_id: str, time_min: str, time_max: str) -> List[dict]:
