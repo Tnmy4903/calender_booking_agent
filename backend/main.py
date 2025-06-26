@@ -36,6 +36,8 @@ async def chat(request: Request):
             return {"response": "⚠️ I don't remember which time slot to book. Please specify again."}
         response = confirm_booking(last_slot)
         user_sessions.pop(session_id, None)  # clear after booking
+        print(f"User message: {user_message}")
+        print(f"Response: {response}")
         return {"response": response}
 
     # Else, handle as normal user message
@@ -46,3 +48,5 @@ async def chat(request: Request):
         user_sessions[session_id] = suggested_slot
 
     return {"response": response}
+
+
