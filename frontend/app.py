@@ -19,7 +19,7 @@ if user_input:
 
     # Send message to backend
     try:
-        response = requests.post("https://calender-booking-agent.onrender.com/chat", json={"message": user_input})
+        response = requests.post("https://calender-booking-agent-backend.onrender.com/chat", json={"message": user_input})
         bot_reply = response.json().get("response", "Error from backend")
     except Exception as e:
         bot_reply = f"❌ Error contacting backend: {e}"
