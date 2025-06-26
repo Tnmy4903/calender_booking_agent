@@ -1,0 +1,67 @@
+Here is a `.gitignore` file tailored for your project using:
+
+* Python (FastAPI backend)
+* Streamlit (frontend)
+* Google APIs
+* Virtual environment
+* Common IDE/editor and OS files
+
+```gitignore
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env
+.env.*
+
+# VS Code settings
+.vscode/
+
+# Pytest and coverage
+.cache/
+.coverage
+coverage.xml
+*.cover
+htmlcov/
+
+# Jupyter and IPython
+.ipynb_checkpoints
+*.ipynb
+
+# Logs and local database
+*.log
+*.sqlite3
+
+# Streamlit cache
+.streamlit/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python egg info
+*.egg-info/
+dist/
+build/
+
+# Pip dependency files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# PyArrow temp files
+pyarrow-*.*.temp
+
+# Misc
+*.bak
+*.swp
+*.tmp
+```
+
+Would you like me to save this as a downloadable `.gitignore` file too?
